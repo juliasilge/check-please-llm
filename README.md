@@ -2,7 +2,9 @@
 
 Use this Quarto dashboard to check how well the content on a webpage matches the Wikipedia page that most closes matches its topic.
 
-Some examples to try:
+See an example rendered at: <https://juliasilge.github.io/check-please-llm/>
+
+Some example URLs to try:
 
 - <https://childrenshealthdefense.org/defender/texas-health-officials-measles-budesonide-treatment/>
 - <https://childrenshealthdefense.org/defender/cdc-study-possible-link-vaccines-autism/>
