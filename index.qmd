@@ -1,6 +1,9 @@
 ---
 title: "Check, please!"
-format: dashboard
+format: 
+    dashboard:
+        nav-buttons: [github]
+        github: https://github.com/juliasilge/check-please-llm
 ---
     
 ```{python}
