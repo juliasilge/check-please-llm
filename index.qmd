@@ -1,0 +1,117 @@
+---
+title: "Check, please!"
+format: dashboard
+---
+    
+```{python}
+#| tags: [parameters]
+
+input_url = "https://childrenshealthdefense.org/defender/cdc-study-possible-link-vaccines-autism/"
+```
+
+
+```{python}
+#| output: false
+import requests
+import wikipedia
+
+from chatlas import ChatOpenAI
+from dotenv import load_dotenv
+from pydantic import BaseModel
+from enum import Enum
+from IPython.display import Markdown
+
+load_dotenv()  # Loads OPENAI_API_KEY from the .env file
+
+## Get LLM-ready markdown from a URL
+url = f"https://r.jina.ai/{input_url}"
+r = requests.get(url)
+text1 = r.text
+
+## Find the best match Wikipedia page for the URL content
+chat = ChatOpenAI(model="gpt-4o", system_prompt="You are a terse assistant.")
+summary = chat.chat(
+    f"What is topic of the following text? Give me the topic in 6 words or less: {text1}",
+    echo="none",
+    stream=False
+)
+search_results = wikipedia.search(str(summary))
+
+best_topic = chat.chat(
+    f"Which of these topics ({search_results}) is the best fit for the topic of our text? Be sure you pick **exactly** one of these possible topics.",
+    echo="none",
+    stream=False
+)
+page = wikipedia.page(str(best_topic))
+text2 = page.content
+
+## Estimate how well the URL content agrees with the Wikipedia page
+class ScoreEnum(str, Enum):
+    strongAgree = 'stronglyAgree'
+    somewhatAgree = 'somewhatAgree'
+    undetermined = 'undetermined'
+    somewhatDisagree = 'somewhatDisagree'
+    strongDisagree = 'strongDisagree'
+
+class EntailmentScore(BaseModel):
+    score: ScoreEnum
+
+def agreement_dict(score):
+    match score:
+        case ScoreEnum.strongAgree:
+            return dict(icon = "check-circle", color = "success", value = "Strongly agree")
+        case ScoreEnum.somewhatAgree:
+            return dict(icon = "check-circle", color = "primary", value = "Somewhat agree")
+        case ScoreEnum.undetermined:
+            return dict(icon = "question-circle", color = "light", value = "Undetermined")
+        case ScoreEnum.somewhatDisagree:
+            return dict(icon = "slash-circle", color = "warning", value = "Somewhat disagree")
+        case ScoreEnum.strongDisagree:
+            return dict(icon = "slash-circle", color = "danger", value = "Strongly disagree")
+
+chat = ChatOpenAI(model="gpt-4o", system_prompt="You are a terse assistant.")
+agreement = chat.chat(
+    f"""
+    Given two texts, write a short paragraph evaluating how well they agree. 
+    
+    This is the first text, which is from a URL I am interesting in learning about: {text1} 
+    
+    This is the second text, which I got from Wikipedia: {text2}
+
+    Explain if the URL I am interested in agrees with the information I got from Wikipedia.
+    """,
+    echo="none",
+    stream=False
+)
+
+agreement_score = chat.extract_data(
+    "For these same two texts, evaluate how well they agree",
+    data_model=EntailmentScore
+)
+
+```
+
+## Row
+
+```{python}
+Markdown(f"For your URL at: <{input_url}>")
+Markdown(f"Learn more at the Wikipedia page: <{page.url}>")
+```
+
+## Row
+
+::: {.card title="How do these pages agree?"}
+
+```{python}
+Markdown(f"{agreement}")
+```
+
+:::
+
+## Row
+
+```{python}
+#| content: valuebox
+#| title: Estimated agreement
+agreement_dict(agreement_score["score"])
+```

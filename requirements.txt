@@ -1,0 +1,11 @@
+anthropic[bedrock]
+boto3
+chatlas
+openai
+pillow
+python-dotenv
+requests
+shiny
+jupyter
+wikipedia
+papermill
